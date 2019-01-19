@@ -1,38 +1,104 @@
-Role Name
+egeneralov.gitlab
 =========
 
-A brief description of the role goes here.
+Provision gitlab-ce installation with LDAP, omniauth and s3 backup integration.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Debian-based machine. Tested on stretch, installation "on-premise" and DigitalOcean template.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+All fields are required and have default value.
 
-Dependencies
-------------
+- **domain**: like `gitlab.egeneralov.tk`
+- **email**: for let's encrypt notifications
+- **root_password**: string, more 8 chars
+- **runners_token**: string, 21 chars
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
 
-Example Playbook
+- **ldap**:
+  - **enabled**: if `true` - enable integration
+  - **host**: ldap dns name, like `ldap.egeneralov.tk`
+  - **port**: `389` or (ssl) `636`
+  - **uid**: id attribute, like `uid`
+  - **bind_dn**: like `uid=gitlabro,cn=users,cn=compat,dc=egeneralov,dc=tk`
+  - **password**: bind_dn user password
+  - **encryption**: `plain, simple_tls or start_tls`
+  - **verify_certificates**: `true` or `false`
+  - **ca_file**: path `/etc/ipa/ca.crt`
+  - **active_directory**: `true` or `false`
+  - **allow_username_or_email_login**: `true` or `false`
+  - **block_auto_created_users**: `true` or `false`
+  - **base**: base dn, like `dc=egeneralov,dc=tk`
+  - **user_filter**: just `(objectClass=inetorgperson)` or restrict to group like `(&(uid=%u)(memberOf=gitlab,cn=groups,cn=accounts,dc=egeneralov,dc=tk))`
+
+
+- **omniauth**:
+  - **enabled**: if true - **enable integration
+  - **providers**: inspect https://docs.gitlab.com/ce/integration/omniauth.html
+
+```json
+    {
+      "name": "bitbucket",
+      "app_id": "",
+      "app_secret": "",
+      "url": "https://bitbucket.org/"
+    }
+```
+
+- **backup**:
+  - **enabled**: if true - enable integration
+  - **bucket**: name of DigitalOcean space
+
+```json
+    {
+      "provider": "AWS",
+      "region": "ams3",
+      "aws_access_key_id": "",
+      "aws_secret_access_key": "",
+      "endpoint": "https://ams3.digitaloceanspaces.com"
+    }
+```
+
+
+Example playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
+    - hosts: gitlab
+      vars:
+        domain: gitlab.company.tld
+        email: noc@company.tld
+        root_password: Ru65oNWUzJQ17yh7YwzE
+        runners_token: Ru65oNWUzJQ17yh7YwzE
+        ldap:
+          enabled: true
+          host: ldap.company.tld
+          bind_dn: 'uid=gitlabro,cn=users,cn=compat,dc=company,dc=tld'
+          password: 'Ru65oNWUzJQ17yh7YwzE'
+          encryption: 'plain'
+          base: 'dc=company,dc=tld'
+          user_filter: '(objectClass=inetorgperson)'
+        omniauth:
+          enabled: false
+        backup:
+          enabled: true
+          bucket: "gitlab-company-tld-backup-space"
+          upload_connection: {
+              "provider": "AWS",
+              "region": "ams3",
+              "aws_access_key_id": "digitaloceanspaces",
+              "aws_secret_access_key": "Ru65oNWUzJQ17yh7YwzE",
+              "endpoint": "https://ams3.digitaloceanspaces.com"
+            }
       roles:
-         - { role: username.rolename, x: 42 }
+        - egeneralov.gitlab
+
 
 License
 -------
 
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+MIT

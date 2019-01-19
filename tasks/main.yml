@@ -1,0 +1,71 @@
+---
+# tasks file for egeneralov.gitlab
+
+
+- name: System-wide deps
+  apt:
+    name: ['ca-certificates', 'apt-transport-https', 'debian-archive-keyring']
+    update_cache: yes
+    cache_valid_time: 3600
+  register: task_result
+  until: task_result is success
+  retries: 10
+  delay: 2
+
+
+- name: apt-key
+  apt_key:
+    url: https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey
+  register: task_result
+  until: task_result is success
+  retries: 10
+  delay: 2
+
+
+- name: apt-repo
+  apt_repository:
+    repo: deb https://packages.gitlab.com/gitlab/gitlab-ce/debian/ stretch main
+  register: task_result
+  until: task_result is success
+  retries: 10
+  delay: 2
+
+
+- name: "apt-get install -yq gitlab-ce"
+  apt:
+    name: gitlab-ce
+    update_cache: yes
+    cache_valid_time: 3600
+  register: task_result
+  until: task_result is success
+  retries: 10
+  delay: 2
+
+
+- name: gitlab.rb
+  template:
+    src: gitlab.rb.j2
+    dest: /etc/gitlab/gitlab.rb
+  register: tpl
+
+
+- name: "gitlab-ctl reconfigure"
+  shell: gitlab-ctl reconfigure
+  when: tpl is changed
+  register: task_result
+  until: task_result is success
+  retries: 2
+  delay: 2
+
+
+- name: "PAT: 17yh7YwzERu65oNWUzJQ"
+  copy:
+    src: pat.sql
+    dest: /opt/pat.sql
+    mode: 0777
+
+
+- name: Apply PAT
+  shell: |
+    cat /opt/pat.sql | sudo -u gitlab-psql /opt/gitlab/embedded/bin/psql -h /var/opt/gitlab/postgresql -d gitlabhq_production
+  failed_when: false

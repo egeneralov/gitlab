@@ -1,0 +1,83 @@
+nginx['cache_max_size'] = '128m'
+
+
+gitlab_rails['usage_ping_enabled'] = false
+prometheus['enable'] = false
+gitlab_monitor['enable'] = false
+prometheus_monitoring['enable'] = false
+postgres_exporter['enable'] = false
+
+
+external_url 'https://{{ domain }}'
+
+
+letsencrypt['enable'] = true
+letsencrypt['contact_emails'] = ['{{ email }}']
+letsencrypt['auto_renew'] = true
+letsencrypt['auto_renew_hour'] = '0'
+letsencrypt['auto_renew_minute'] = '30'
+letsencrypt['auto_renew_day_of_month'] = '*/4'
+
+
+gitlab_rails['registry_enabled'] = true
+gitlab_rails['registry_host'] = '{{ domain }}'
+registry['enable'] = true
+registry['username'] = 'registry'
+registry['dir'] = '/var/opt/gitlab/registry'
+registry_external_url 'https://{{ domain }}'
+
+
+gitlab_rails['omniauth_enabled'] = true
+gitlab_rails['omniauth_auto_link_ldap_user'] = false
+
+
+
+gitlab_rails['initial_root_password'] = '{{ root_password }}'
+gitlab_rails['initial_shared_runners_registration_token'] = '{{ runners_token }}'
+
+
+{% if ldap.enabled == true %}
+gitlab_rails['ldap_enabled'] = true
+gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
+   main:
+     label: 'LDAP'
+     host: '{{ ldap.host }}'
+     port: {{ ldap.port }}
+     uid: '{{ ldap.uid }}'
+     bind_dn: '{{ ldap.bind_dn }}'
+     password: '{{ ldap.password }}'
+     encryption: '{{ ldap.encryption }}'
+     verify_certificates: {{ ldap.verify_certificates }}
+     ca_file: '{{ ldap.ca_file }}'
+     active_directory: {{ ldap.active_directory }}
+     allow_username_or_email_login: {{ ldap.allow_username_or_email_login }}
+     block_auto_created_users: {{ ldap.block_auto_created_users }}
+     base: '{{ ldap.base }}'
+     user_filter: '{{ ldap.user_filter }}'
+     attributes:
+       username: ['uid']
+       email:    ['mail', 'email']
+       name:       'cn'
+       first_name: 'givenName'
+       last_name:  'sn'
+EOS
+{% endif %}
+
+
+{% if omniauth.enabled == true %}
+
+gitlab_rails['omniauth_enabled'] = true
+gitlab_rails['omniauth_providers'] = YAML.load <<-'EOS'
+{{ omniauth.providers | to_nice_yaml(indent=2) }}
+EOS
+{% endif %}
+
+
+
+{% if backup.enabled == true %}
+gitlab_rails['backup_upload_remote_directory'] = '{{ backup.bucket }}'
+gitlab_rails['backup_upload_connection'] = YAML.load <<-'EOS'
+{{ backup.upload_connection | to_nice_yaml(indent=2) }}
+EOS
+{% endif %}
+

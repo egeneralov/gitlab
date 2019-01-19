@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Eduard Generalov
+  description: Install gitlab-ce with ldap auth
+  license: MIT
+  min_ansible_version: 2.4
+  github_branch: master
+
+  platforms:
+  - name: Debian
+    versions:
+    - stretch
+    - jessie
+
+  galaxy_tags:
+    - gitlab
+    - debian
+
+dependencies: []
