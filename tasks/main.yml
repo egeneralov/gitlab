@@ -75,7 +75,9 @@
     src: pat.sql
     dest: /opt/pat.sql
     mode: 0777
-
+  when: apply_pat
+  become: yes
+  become_user: root
 
 - name: Apply PAT
   shell: |
