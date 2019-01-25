@@ -6,6 +6,7 @@ email: eduard@generalov.net
 root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE
 
+apply_pat: false
 
 ldap:
   enabled: false

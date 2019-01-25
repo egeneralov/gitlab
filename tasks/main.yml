@@ -11,6 +11,8 @@
   until: task_result is success
   retries: 10
   delay: 2
+  become: yes
+  become_user: root
 
 
 - name: apt-key
@@ -20,6 +22,8 @@
   until: task_result is success
   retries: 10
   delay: 2
+  become: yes
+  become_user: root
 
 
 - name: apt-repo
@@ -29,6 +33,8 @@
   until: task_result is success
   retries: 10
   delay: 2
+  become: yes
+  become_user: root
 
 
 - name: "apt-get install -yq gitlab-ce"
@@ -40,6 +46,8 @@
   until: task_result is success
   retries: 10
   delay: 2
+  become: yes
+  become_user: root
 
 
 - name: gitlab.rb
@@ -47,6 +55,8 @@
     src: gitlab.rb.j2
     dest: /etc/gitlab/gitlab.rb
   register: tpl
+  become: yes
+  become_user: root
 
 
 - name: "gitlab-ctl reconfigure"
@@ -56,6 +66,8 @@
   until: task_result is success
   retries: 2
   delay: 2
+  become: yes
+  become_user: root
 
 
 - name: "PAT: 17yh7YwzERu65oNWUzJQ"
@@ -67,5 +79,9 @@
 
 - name: Apply PAT
   shell: |
-    cat /opt/pat.sql | sudo -u gitlab-psql /opt/gitlab/embedded/bin/psql -h /var/opt/gitlab/postgresql -d gitlabhq_production
+    cat /opt/pat.sql | /opt/gitlab/embedded/bin/psql -h /var/opt/gitlab/postgresql -d gitlabhq_production
   failed_when: false
+  when: apply_pat
+  become: yes
+  become_user: gitlab-psql
+
