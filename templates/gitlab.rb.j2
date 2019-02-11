@@ -8,7 +8,7 @@ prometheus_monitoring['enable'] = false
 postgres_exporter['enable'] = false
 
 
-external_url 'https://{{ domain }}'
+external_url 'http://{{ domain }}'
 
 
 letsencrypt['enable'] = true
@@ -24,7 +24,7 @@ gitlab_rails['registry_host'] = '{{ domain }}'
 registry['enable'] = true
 registry['username'] = 'registry'
 registry['dir'] = '/var/opt/gitlab/registry'
-registry_external_url 'https://{{ domain }}'
+registry_external_url 'http://{{ domain }}'
 
 
 gitlab_rails['omniauth_enabled'] = true
