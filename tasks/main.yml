@@ -70,7 +70,7 @@
   become_user: root
 
 
-- name: "PAT: 17yh7YwzERu65oNWUzJQ"
+- name: "PAT: yakVnK_nZsN8nAEPsCP_"
   copy:
     src: pat.sql
     dest: /opt/pat.sql
