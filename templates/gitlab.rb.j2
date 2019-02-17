@@ -8,10 +8,10 @@ prometheus_monitoring['enable'] = false
 postgres_exporter['enable'] = false
 
 
-external_url 'http://{{ domain }}'
+external_url 'https://{{ domain }}'
 
 
-letsencrypt['enable'] = false
+letsencrypt['enable'] = true
 letsencrypt['contact_emails'] = ['{{ email }}']
 letsencrypt['auto_renew'] = true
 letsencrypt['auto_renew_hour'] = '0'

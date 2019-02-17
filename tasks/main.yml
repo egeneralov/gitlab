@@ -86,4 +86,3 @@
   when: apply_pat
   become: yes
   become_user: gitlab-psql
-
