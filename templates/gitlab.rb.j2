@@ -1,4 +1,4 @@
-nginx['cache_max_size'] = '128m'
+external_url '{% if letsencrypt.enable == true %}https{% else %}http{% endif %}://{{ domain }}'
 
 
 gitlab_rails['usage_ping_enabled'] = false
@@ -7,17 +7,9 @@ gitlab_monitor['enable'] = false
 prometheus_monitoring['enable'] = false
 postgres_exporter['enable'] = false
 
-
-external_url 'https://{{ domain }}'
-
-
-letsencrypt['enable'] = true
-letsencrypt['contact_emails'] = ['{{ email }}']
-letsencrypt['auto_renew'] = true
-letsencrypt['auto_renew_hour'] = '0'
-letsencrypt['auto_renew_minute'] = '30'
-letsencrypt['auto_renew_day_of_month'] = '*/4'
-
+gitlab_rails['letsencrypt'] = YAML.load <<-'EOS'
+{{ letsencrypt | to_nice_yaml(indent=2) }}
+EOS
 
 gitlab_rails['registry_enabled'] = true
 gitlab_rails['registry_host'] = '{{ domain }}'
@@ -25,11 +17,6 @@ registry['enable'] = true
 registry['username'] = 'registry'
 registry['dir'] = '/var/opt/gitlab/registry'
 registry_external_url 'http://{{ domain }}'
-
-
-gitlab_rails['omniauth_enabled'] = true
-gitlab_rails['omniauth_auto_link_ldap_user'] = false
-
 
 
 gitlab_rails['initial_root_password'] = '{{ root_password }}'
@@ -65,14 +52,12 @@ EOS
 
 
 {% if omniauth.enabled == true %}
-
 gitlab_rails['omniauth_enabled'] = true
+gitlab_rails['omniauth_auto_link_ldap_user'] = false
 gitlab_rails['omniauth_providers'] = YAML.load <<-'EOS'
 {{ omniauth.providers | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
-
-
 
 {% if backup.enabled == true %}
 gitlab_rails['backup_upload_remote_directory'] = '{{ backup.bucket }}'
@@ -80,4 +65,3 @@ gitlab_rails['backup_upload_connection'] = YAML.load <<-'EOS'
 {{ backup.upload_connection | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
-

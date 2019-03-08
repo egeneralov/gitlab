@@ -5,8 +5,13 @@ domain: egeneralov.tk
 email: eduard@generalov.net
 root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE
+# gitlab_version: 11.3.4
 
-apply_pat: false
+restore:
+  enabled: false
+  from: /path/to/1551970455_2019_03_07_11.3.4_gitlab_backup.tar.gz
+#   secrets: /path/to/gitlab-secrets.json
+  force: false
 
 ldap:
   enabled: false
@@ -24,7 +29,6 @@ ldap:
   base: 'dc=egeneralov,dc=tk'
   user_filter: '(objectClass=inetorgperson)'
 
-
 omniauth:
   enabled: false
   providers:
@@ -34,7 +38,6 @@ omniauth:
       "app_secret": "",
       "url": "https://bitbucket.org/"
     }
-
 
 backup:
   enabled: false
@@ -46,3 +49,12 @@ backup:
       'aws_secret_access_key': '',
       'endpoint': 'https://ams3.digitaloceanspaces.com'
     }
+
+letsencrypt:
+  enable: false
+  contact_emails:
+    - "{{ email }}"
+  auto_renew: true
+  auto_renew_hour: 0
+  auto_renew_minute: 30
+  auto_renew_day_of_month: "*/4"

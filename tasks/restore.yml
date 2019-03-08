@@ -1,0 +1,61 @@
+---
+
+
+- name: "Ensure directory for backup files exist"
+  file:
+    path: "/var/opt/gitlab/backups/"
+    state: directory
+    owner: git
+    group: git
+
+- name: "Copy {{ restore.from | basename }}"
+  copy:
+    src: "{{ restore.from }}"
+    dest: "/var/opt/gitlab/backups/{{ restore.from | basename }}"
+    owner: git
+    group: git
+
+- name: "Copy secrets file"
+  copy:
+    src: "{{ restore.secrets }}"
+    dest: "/etc/gitlab/gitlab-secrets.json"
+    owner: git
+    group: git
+
+- name: "Stop services"
+  shell: "gitlab-ctl stop {{ item }}"
+  with_items:
+    - unicorn
+    - sidekiq
+
+- name: "Restore from backup"
+  shell: "gitlab-rake gitlab:backup:restore"
+  environment:
+    BACKUP: "{{ restore.from | basename | replace('_gitlab_backup.tar','') }}"
+    SANITIZE: "true"
+    force: "yes"
+
+- name: "When the secrets file is lost - drop all ci variables"
+  shell: "echo 'DELETE FROM {{ item }};' | gitlab-rails dbconsole"
+  with_items:
+    - ci_group_variables
+    - ci_variables
+  when: restore.secrets is not defined
+
+- name: "gitlab-ctl restart"
+  shell: "gitlab-ctl restart"
+
+- name: "Wait for services to be ready"
+  wait_for:
+    port: "{{ item }}"
+    host: "127.0.0.1"
+    connect_timeout: 3
+    timeout: 60
+  with_items:
+    - 5000
+    - 9229
+    - 8080
+    - 80
+    - 8082
+    - 9236
+    - 8060

@@ -1,88 +1,38 @@
 ---
 # tasks file for egeneralov.gitlab
 
+- import_tasks: install.yml
 
-- name: System-wide deps
-  apt:
-    name: ['ca-certificates', 'apt-transport-https', 'debian-archive-keyring']
-    update_cache: yes
-    cache_valid_time: 3600
-  register: task_result
-  until: task_result is success
-  retries: 10
-  delay: 2
-  become: yes
-  become_user: root
+- name: Restore from backup
+  block:
+    - name: Check if backup file exist
+      stat:
+        path: "{{ restore.from }}"
+      register: backup_file_stat
+      failed_when: "backup_file_stat.stat.islnk is not defined"
+      delegate_to: localhost
+    
+    - name: Check if secrets file exist
+      stat:
+        path: "{{ restore.from }}"
+      register: secrets_file_stat
+      failed_when: "secrets_file_stat.stat.islnk is not defined"
+      when: restore.secrets is defined
+      delegate_to: localhost
+    
+    - name: Checking if backup file correctly named
+      assert:
+        that:
+          - 'restore.from | basename is search("(\d\d\d\d\d\d\d\d\d\d_\d\d\d\d_\d\d_\d\d_\d\d\.\d\.\d_gitlab_backup.tar)")'
+        fail_msg: "Filename incorrect {{ restore.from | basename }}. Details at https://docs.gitlab.com/ee/raketasks/backup_restore.html#backup-timestamp"
+    
+    - name: Check if already restored
+      stat:
+        path: "/var/opt/gitlab/backups/{{ restore.from | basename }}"
+      register: backup_file_on_host
 
+    - name: restore from backup
+      import_tasks: restore.yml
+      when: backup_file_on_host.stat.islnk is not defined or restore.force
 
-- name: apt-key
-  apt_key:
-    url: https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey
-  register: task_result
-  until: task_result is success
-  retries: 10
-  delay: 2
-  become: yes
-  become_user: root
-
-
-- name: apt-repo
-  apt_repository:
-    repo: deb https://packages.gitlab.com/gitlab/gitlab-ce/debian/ stretch main
-  register: task_result
-  until: task_result is success
-  retries: 10
-  delay: 2
-  become: yes
-  become_user: root
-
-
-- name: "apt-get install -yq gitlab-ce"
-  apt:
-    name: gitlab-ce
-    update_cache: yes
-    cache_valid_time: 3600
-  register: task_result
-  until: task_result is success
-  retries: 10
-  delay: 2
-  become: yes
-  become_user: root
-
-
-- name: gitlab.rb
-  template:
-    src: gitlab.rb.j2
-    dest: /etc/gitlab/gitlab.rb
-  register: tpl
-  become: yes
-  become_user: root
-
-
-- name: "gitlab-ctl reconfigure"
-  shell: gitlab-ctl reconfigure
-  when: tpl is changed
-  register: task_result
-  until: task_result is success
-  retries: 2
-  delay: 2
-  become: yes
-  become_user: root
-
-
-- name: "PAT: yakVnK_nZsN8nAEPsCP_"
-  copy:
-    src: pat.sql
-    dest: /opt/pat.sql
-    mode: 0777
-  when: apply_pat
-  become: yes
-  become_user: root
-
-- name: Apply PAT
-  shell: |
-    cat /opt/pat.sql | /opt/gitlab/embedded/bin/psql -h /var/opt/gitlab/postgresql -d gitlabhq_production
-  failed_when: false
-  when: apply_pat
-  become: yes
-  become_user: gitlab-psql
+  when: restore.enabled
