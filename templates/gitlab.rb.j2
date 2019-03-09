@@ -60,8 +60,10 @@ EOS
 {% endif %}
 
 {% if backup.enabled == true %}
+{% if backup.backup_upload_connection|length > 0 %}
 gitlab_rails['backup_upload_remote_directory'] = '{{ backup.bucket }}'
 gitlab_rails['backup_upload_connection'] = YAML.load <<-'EOS'
 {{ backup.upload_connection | to_nice_yaml(indent=2) }}
 EOS
+{% endif %}
 {% endif %}

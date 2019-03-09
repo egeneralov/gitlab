@@ -1,5 +1,26 @@
 ---
 
+- name: Check if backup file exist
+  stat:
+    path: "{{ restore.from }}"
+  register: backup_file_stat
+  failed_when: "backup_file_stat.stat.islnk is not defined"
+  delegate_to: localhost
+
+- name: Check if secrets file exist
+  stat:
+    path: "{{ restore.from }}"
+  register: secrets_file_stat
+  failed_when: "secrets_file_stat.stat.islnk is not defined"
+  when: restore.secrets is defined
+  delegate_to: localhost
+
+- name: Checking if backup file correctly named
+  assert:
+    that:
+      - 'restore.from | basename is search("(\d\d\d\d\d\d\d\d\d\d_\d\d\d\d_\d\d_\d\d_\d\d\.\d\.\d_gitlab_backup.tar)")'
+    fail_msg: "Filename incorrect {{ restore.from | basename }}. Details at https://docs.gitlab.com/ee/raketasks/backup_restore.html#backup-timestamp"
+    
 
 - name: "Ensure directory for backup files exist"
   file:

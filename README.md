@@ -1,5 +1,5 @@
 egeneralov.gitlab
-=========
+=================
 
 Provision gitlab-ce installation with LDAP, omniauth and s3 backup integration.
 
@@ -37,7 +37,7 @@ All fields are required and have default value.
 
 
 - **omniauth**:
-  - **enabled**: if true - **enable integration
+  - **enabled**: if true - enable integration
   - **providers**: inspect https://docs.gitlab.com/ce/integration/omniauth.html
 
 ```json
@@ -49,7 +49,7 @@ All fields are required and have default value.
     }
 ```
 
-- **backup**:
+- **backup**: setup auto-backups to S3
   - **enabled**: if true - enable integration
   - **bucket**: name of DigitalOcean space
 
@@ -63,10 +63,48 @@ All fields are required and have default value.
     }
 ```
 
+- **restore**: restore your gitlab from backup file
+  - **enabled**: if `true` - proceed restore action
+  - **force**: if `true` - proceed restore action if backup file already present on remote host
+  - **from**: path to `_gitlab_backup.tar` file
+  - **secrets**: path to `gitlab-secrets.json`, if lost - database secrets will be cleaned
+
+
 
 Example playbook
 ----------------
 
+#### Just install
+
+    - hosts: gitlab
+      vars:
+        domain: gitlab.shared
+        email: noc@gitlab.com
+        root_password: Ru65oNWUzJQ17yh7YwzE
+        runners_token: Ru65oNWUzJQ17yh7YwzE
+      roles:
+        - egeneralov.gitlab
+
+#### Restore from backup
+
+[![asciicast](https://asciinema.org/a/TqAA1J1lDVi7ub1xxdjFJ35TU.svg)](https://asciinema.org/a/TqAA1J1lDVi7ub1xxdjFJ35TU)
+
+    - hosts: gitlab
+      vars:
+        domain: gitlab.shared
+        email: noc@gitlab.com
+        root_password: Ru65oNWUzJQ17yh7YwzE
+        runners_token: Ru65oNWUzJQ17yh7YwzE
+        gitlab_version: 11.3.4-ce.0
+        restore:
+          enabled: yes
+          from: 1551970455_2019_03_07_11.3.4_gitlab_backup.tar
+          secrets: gitlab-secrets.json
+          force: no
+      roles:
+        - egeneralov.gitlab
+
+#### Example with ldap and auto-backup to digital ocean s3
 
     - hosts: gitlab
       vars:
@@ -82,8 +120,6 @@ Example playbook
           encryption: 'plain'
           base: 'dc=company,dc=tld'
           user_filter: '(objectClass=inetorgperson)'
-        omniauth:
-          enabled: false
         backup:
           enabled: true
           bucket: "gitlab-company-tld-backup-space"
@@ -96,7 +132,6 @@ Example playbook
             }
       roles:
         - egeneralov.gitlab
-
 
 License
 -------
