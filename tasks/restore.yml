@@ -64,18 +64,3 @@
 
 - name: "gitlab-ctl restart"
   shell: "gitlab-ctl restart"
-
-- name: "Wait for services to be ready"
-  wait_for:
-    port: "{{ item }}"
-    host: "127.0.0.1"
-    connect_timeout: 3
-    timeout: 60
-  with_items:
-    - 5000
-    - 9229
-    - 8080
-    - 80
-    - 8082
-    - 9236
-    - 8060

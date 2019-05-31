@@ -1,7 +1,8 @@
 ---
 # defaults file for egeneralov.gitlab
 
-domain: egeneralov.tk
+domain: gitlab.egeneralov.tk
+registry_host: registry.egeneralov.tk
 email: eduard@generalov.net
 root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE

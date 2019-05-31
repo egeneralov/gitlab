@@ -34,7 +34,8 @@
 - name: "Install gitlab-ce"
   apt:
     name: "gitlab-ce{% if gitlab_version is defined %}={{ gitlab_version }}{% endif %}"
-    state: present
+    state: "{% if gitlab_version is defined %}present{% else %}latest{% endif %}"
+#     state: present
     update_cache: yes
     cache_valid_time: 3600
   register: task_result
@@ -46,6 +47,7 @@
   template:
     src: gitlab.rb.j2
     dest: /etc/gitlab/gitlab.rb
+    backup: yes
   register: tpl
 
 - name: "gitlab-ctl reconfigure"

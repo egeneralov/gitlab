@@ -24,3 +24,18 @@
     name: "GitLab backup"
     special_time: "{{ backup.schedule }}"
     job: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"
+
+- name: "Wait for services to be ready"
+  wait_for:
+    port: "{{ item }}"
+    host: "127.0.0.1"
+    connect_timeout: 3
+    timeout: 60
+  with_items:
+    - 5000
+    - 9229
+    - 8080
+    - 80
+    - 8082
+    - 9236
+    - 8060
