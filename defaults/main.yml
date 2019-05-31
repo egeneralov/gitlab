@@ -71,3 +71,11 @@ letsencrypt:
 
 nginx:
   client_max_body_size: 100m
+
+
+
+
+
+
+
+__gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"

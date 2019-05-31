@@ -23,7 +23,7 @@
   cron:
     name: "GitLab backup"
     special_time: "{{ backup.schedule }}"
-    job: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"
+    job: "{{ __gitlab_backup_cmd__ }}"
 
 - name: "Wait for services to be ready"
   wait_for:
