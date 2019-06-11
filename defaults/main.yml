@@ -10,7 +10,7 @@ runners_token: Ru65oNWUzJQ17yh7YwzE
 
 prometheus:
   enable: false
-  listen_address: 0.0.0.0:9090
+#   listen_address: 0.0.0.0:9090
   exporters:
     gitlab_monitor: false
     prometheus_monitoring: false
@@ -86,6 +86,6 @@ nginx:
 
 
 
-
+reconfigure: false
 
 __gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"
