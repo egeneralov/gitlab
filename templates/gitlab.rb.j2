@@ -1,11 +1,12 @@
-external_url '{% if letsencrypt.enable == true %}https{% else %}http{% endif %}://{{ domain }}'
+external_url 'http{% if letsencrypt.enable == true %}s{% endif %}://{{ domain }}'
 
 
 gitlab_rails['usage_ping_enabled'] = false
-prometheus['enable'] = false
-gitlab_monitor['enable'] = false
-prometheus_monitoring['enable'] = false
-postgres_exporter['enable'] = false
+prometheus['enable'] = {{ prometheus.enable | bool | lower }}
+gitlab_monitor['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+prometheus_monitoring['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+postgres_exporter['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+prometheus['listen_address'] = '{{ prometheus.listen_address | default('127.0.0.1:9090') }}'
 
 gitlab_rails['letsencrypt'] = YAML.load <<-'EOS'
 {{ letsencrypt | to_nice_yaml(indent=2) }}
@@ -16,13 +17,12 @@ gitlab_rails['registry_host'] = '{{ registry_host }}'
 registry['enable'] = true
 registry['username'] = 'registry'
 registry['dir'] = '/var/opt/gitlab/registry'
-registry_external_url 'http://{{ registry_host }}'
-
+registry_external_url 'http{% if letsencrypt.enable == true %}s{% endif %}://{{ registry_host }}'
 
 gitlab_rails['initial_root_password'] = '{{ root_password }}'
 gitlab_rails['initial_shared_runners_registration_token'] = '{{ runners_token }}'
 
-
+{% if ldap is defined %}
 {% if ldap.enabled == true %}
 gitlab_rails['ldap_enabled'] = true
 gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
@@ -49,8 +49,9 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
        last_name:  'sn'
 EOS
 {% endif %}
+{% endif %}
 
-
+{% if omniauth is defined %}
 {% if omniauth.enabled == true %}
 gitlab_rails['omniauth_enabled'] = true
 gitlab_rails['omniauth_auto_link_ldap_user'] = false
@@ -58,7 +59,9 @@ gitlab_rails['omniauth_providers'] = YAML.load <<-'EOS'
 {{ omniauth.providers | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
+{% endif %}
 
+{% if backup is defined %}
 {% if backup.enabled == true %}
 {% if backup.upload_connection|length > 0 %}
 gitlab_rails['backup_upload_remote_directory'] = '{{ backup.bucket }}'
@@ -67,12 +70,10 @@ gitlab_rails['backup_upload_connection'] = YAML.load <<-'EOS'
 EOS
 {% endif %}
 {% endif %}
-
-
+{% endif %}
 
 {% if nginx is defined %}
 nginx = YAML.load <<-'EOS'
 {{ nginx | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
-

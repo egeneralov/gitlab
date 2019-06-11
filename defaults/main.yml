@@ -8,6 +8,16 @@ root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE
 # gitlab_version: 11.11.0-ce.0
 
+prometheus:
+  enable: false
+  listen_address: 0.0.0.0:9090
+  exporters:
+    gitlab_monitor: false
+    prometheus_monitoring: false
+    postgres_exporter: false
+
+
+
 restore:
   enabled: false
 #   from: /path/to/<timestamp>_gitlab_backup.tar
