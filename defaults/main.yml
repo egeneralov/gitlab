@@ -7,6 +7,9 @@ email: eduard@generalov.net
 root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE
 # gitlab_version: 11.11.0-ce.0
+gitlab_revision: ce
+gitlab_repository: "deb https://packages.gitlab.com/gitlab/gitlab-{{ gitlab_revision }}/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} main"
+gitlab_key_url: "https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey"
 
 prometheus:
   enable: false
@@ -66,7 +69,7 @@ backup:
     - lfs
     - registry
   # weekly, daily, hourly
-  schedule: hourly
+  schedule: daily
   autoremove: false
 
 
@@ -82,9 +85,12 @@ letsencrypt:
 nginx:
   client_max_body_size: 100m
 
-
+runners_clean: false
 
 
 
 
 __gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"
+
+__gitlab_runners_clean_cmd__: "echo 'DELETE FROM ci_runners WHERE id IN ( SELECT id FROM ( SELECT id, ROW_NUMBER() OVER( PARTITION BY description ORDER BY id DESC ) AS row_num FROM ci_runners ) t WHERE t.row_num > 1 );' | su gitlab-psql -c '/opt/gitlab/embedded/bin/psql -h /var/opt/gitlab/postgresql -d gitlabhq_production' >/dev/null"
+

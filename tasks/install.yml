@@ -1,8 +1,7 @@
 ---
 # tasks file for egeneralov.gitlab
 
-
-- name: Install system-wide deps
+- name: "install : system-wide deps"
   apt:
     name:
       - ca-certificates
@@ -10,40 +9,44 @@
       - debian-archive-keyring
     update_cache: yes
     cache_valid_time: 3600
+    state: latest
   register: task_result
   until: task_result is success
-  retries: 10
+  retries: 3
   delay: 2
 
-- name: apt-key gitlab
+- name: "configure : apt-key"
   apt_key:
-    url: https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey
+    url: "{{ gitlab_key_url }}"
+    state: present
   register: task_result
   until: task_result is success
-  retries: 10
+  retries: 3
   delay: 2
+  when: gitlab_key_url is defined
 
-- name: apt-repo gitlab
+- name: "configure : apt-repo"
   apt_repository:
-    repo: deb https://packages.gitlab.com/gitlab/gitlab-ce/debian/ stretch main
+    repo: "{{ gitlab_repository }}"
+    state: present
+    filename: gitlab
   register: task_result
   until: task_result is success
-  retries: 10
+  retries: 3
   delay: 2
 
-- name: "Install gitlab-ce"
+- name: "install : gitlab-ce"
   apt:
     name: "gitlab-ce{% if gitlab_version is defined %}={{ gitlab_version }}{% endif %}"
     state: "{% if gitlab_version is defined %}present{% else %}latest{% endif %}"
-#     state: present
     update_cache: yes
     cache_valid_time: 3600
   register: task_result
   until: task_result is success
-  retries: 10
+  retries: 3
   delay: 2
 
-- name: gitlab.rb
+- name: "configure : gitlab.rb"
   template:
     src: gitlab.rb.j2
     dest: /etc/gitlab/gitlab.rb

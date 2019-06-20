@@ -1,2 +1,7 @@
 ---
 # vars file for egeneralov.gitlab
+
+gitlab_supported_revisions:
+  - ce
+  - ee
+

@@ -1,31 +1,43 @@
 ---
 # tasks file for egeneralov.gitlab
 
+- name: "check : playbook settings"
+  assert:
+    that:
+      - gitlab_revision in gitlab_supported_revisions
+
 - import_tasks: install.yml
 
-- name: Restore from backup
+- name: "restore from backup"
   block:
-    - name: Check if already restored
+    - name: "check : if already restored"
       stat:
         path: "/var/opt/gitlab/backups/{{ restore.from | basename }}"
       register: backup_file_on_host
 
-#     - debug: var=backup_file_on_host
-#     - debug: var=restore
-
-    - name: restore from backup
+    - name: "restore : from backup"
       import_tasks: restore.yml
       when: "backup_file_on_host.stat.islnk is not defined or restore.force"
 
   when: restore.enabled
 
-- name: Install backup crontab task
+
+- name: "install : backup crontab task"
   cron:
     name: "GitLab backup"
     special_time: "{{ backup.schedule }}"
     job: "{{ __gitlab_backup_cmd__ }}"
+  when: backup.enabled
 
-- name: "Wait for services to be ready"
+- name: "install : purge duplicate's runners crontab task"
+  cron:
+    name: "GitLab backup"
+    special_time: "{{ backup.schedule }}"
+    job: "{{ __gitlab_runners_clean_cmd__ }}"
+  when: runners_clean
+
+
+- name: "wait : for services"
   wait_for:
     port: "{{ item }}"
     host: "127.0.0.1"
