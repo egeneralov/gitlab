@@ -1,6 +1,7 @@
 ---
 # defaults file for egeneralov.gitlab
 
+
 domain: gitlab.egeneralov.tk
 registry_host: registry.egeneralov.tk
 email: eduard@generalov.net
@@ -11,13 +12,43 @@ gitlab_revision: ce
 gitlab_repository: "deb https://packages.gitlab.com/gitlab/gitlab-{{ gitlab_revision }}/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} main"
 gitlab_key_url: "https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey"
 
+
 prometheus:
-  enable: false
-#   listen_address: 0.0.0.0:9090
+  enable: true
+  listen_address: 127.0.0.1:9090
   exporters:
-    gitlab_monitor: false
-    prometheus_monitoring: false
-    postgres_exporter: false
+    gitlab_monitor: true
+    prometheus_monitoring: true
+    postgres_exporter: true
+
+
+grafana:
+  enable: true
+  admin_password: Ru65oNWUzJQ17yh7YwzE
+  allow_user_sign_up: false
+  log_directory: /var/log/gitlab/grafana
+  home: /var/opt/gitlab/grafana
+  # gitlab_application_id: GITLAB_APPLICATION_ID
+  # gitlab_secret: GITLAB_SECRET
+  env_directory: /opt/gitlab/etc/grafana/env
+  allowed_groups: []
+  gitlab_auth_sign_up: true
+  http_addr: 127.0.0.1
+  http_port: 3000
+  dashboards:
+    - name: GitLab Omnibus
+      orgId: 1
+      folder: GitLab Omnibus
+      type: file
+      disableDeletion: true
+      updateIntervalSeconds:
+        options:
+          path: /opt/gitlab/embedded/service/grafana-dashboards
+  datasources:
+    - name: GitLab Omnibus
+      type: prometheus
+      access: proxy
+      url: http://127.0.0.1:9090
 
 
 
@@ -26,6 +57,7 @@ restore:
 #   from: /path/to/<timestamp>_gitlab_backup.tar
 #   secrets: /path/to/gitlab-secrets.json
   force: false
+
 
 ldap:
   enabled: false
@@ -43,6 +75,7 @@ ldap:
   base: 'dc=egeneralov,dc=tk'
   user_filter: '(objectClass=inetorgperson)'
 
+
 omniauth:
   enabled: false
   providers: []
@@ -52,6 +85,7 @@ omniauth:
 #       "app_secret": "",
 #       "url": "https://bitbucket.org/"
 #     }
+
 
 backup:
   enabled: false
@@ -82,12 +116,12 @@ letsencrypt:
   auto_renew_minute: 30
   auto_renew_day_of_month: "*/4"
 
+
 nginx:
   client_max_body_size: 100m
 
+
 runners_clean: false
-
-
 
 
 __gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"

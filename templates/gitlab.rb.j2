@@ -77,3 +77,11 @@ nginx = YAML.load <<-'EOS'
 {{ nginx | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
+
+
+
+grafana = YAML.load <<-'EOS'
+
+{{ grafana | to_nice_yaml(indent=2) }}
+
+EOS
