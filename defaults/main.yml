@@ -118,7 +118,93 @@ letsencrypt:
 
 
 nginx:
-  client_max_body_size: 100m
+  enable: true
+  client_max_body_size: 250m
+#   redirect_http_to_https: false
+#   redirect_http_to_https_port: 80
+#   ssl_client_certificate: "/etc/gitlab/ssl/ca.crt"
+#   ssl_verify_client: 'off'
+#   ssl_verify_depth: '1'
+#   ssl_ciphers: ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256
+#   ssl_prefer_server_ciphers: 'on'
+#   ssl_protocols: TLSv1.2 TLSv1.3
+#   ssl_session_cache: builtin:1000  shared:SSL:10m
+#   ssl_session_timeout: 5m
+#   ssl_dhparam: 
+#   listen_addresses:
+#   - "*"
+#   - "[::]"
+#   hsts_max_age: 31536000
+#   hsts_include_subdomains: false
+#   referrer_policy: strict-origin-when-cross-origin
+#   gzip_enabled: true
+#   listen_port: 
+#   listen_https: 
+#   custom_gitlab_server_config: |
+#     location ^~ /foo-namespace/bar-project/raw/ {
+#      deny all;
+#     }
+#   custom_nginx_config: include /etc/nginx/conf.d/example.conf;
+  proxy_read_timeout: 3600
+  proxy_connect_timeout: 300
+#   proxy_set_headers:
+#     Host: "$http_host_with_default"
+#     X-Real-IP: "$remote_addr"
+#     X-Forwarded-For: "$proxy_add_x_forwarded_for"
+#     X-Forwarded-Proto: https
+#     X-Forwarded-Ssl: 'on'
+#     Upgrade: "$http_upgrade"
+#     Connection: "$connection_upgrade"
+#   proxy_cache_path: proxy_cache keys_zone=gitlab:10m max_size=1g levels=1:2
+#   proxy_cache: gitlab
+#   http2_enabled: true
+#   real_ip_trusted_addresses: []
+#   real_ip_header: 
+#   real_ip_recursive: 
+#   custom_error_pages:
+#     '404':
+#       title: Example title
+#       header: Example header
+#       message: Example message
+#   dir: "/var/opt/gitlab/nginx"
+#   log_directory: "/var/log/gitlab/nginx"
+#   worker_processes: 4
+#   worker_connections: 10240
+#   log_format: $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
+#     "$http_referer" "$http_user_agent"
+#   sendfile: 'on'
+  tcp_nopush: 'on'
+  tcp_nodelay: 'on'
+  gzip: 'on'
+  gzip_http_version: '1.0'
+  gzip_comp_level: '2'
+  gzip_proxied: any
+#   gzip_types:
+#   - text/plain
+#   - text/css
+#   - application/x-javascript
+#   - text/xml
+#   - application/xml
+#   - application/xml+rss
+#   - text/javascript
+#   - application/json
+  keepalive_timeout: 65
+#   cache_max_size: 5000m
+  server_names_hash_bucket_size: 64
+#   request_buffering_off_path_regex: ".git/git-receive-pack$|.git/info/refs?service=git-receive-pack$|.git/gitlab-lfs/objects|.git/info/lfs/objects/batch$"
+#   status:
+#     enable: true
+#     listen_addresses:
+#     - 127.0.0.1
+#     fqdn: dev.example.com
+#     port: 9999
+#     vts_enable: true
+#     options:
+#       stub_status: 'on'
+#       server_tokens: 'off'
+#       access_log: 'off'
+#       allow: 127.0.0.1
+#       deny: all
 
 
 runners_clean: false

@@ -73,9 +73,9 @@ EOS
 {% endif %}
 
 {% if nginx is defined %}
-nginx = YAML.load <<-'EOS'
-{{ nginx | to_nice_yaml(indent=2) }}
-EOS
+{% for key, value in nginx.items() %}
+nginx['{{ key }}']="{{ value }}"
+{% endfor %}
 {% endif %}
 
 
