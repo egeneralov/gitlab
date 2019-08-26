@@ -99,7 +99,7 @@ backup:
   skip:
     - uploads
     - builds
-    - artefacts
+    - artifacts
     - lfs
     - registry
   # weekly, daily, hourly
