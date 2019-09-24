@@ -35,9 +35,9 @@
   retries: 3
   delay: 2
 
-- name: "install : gitlab-ce"
+- name: "install : gitlab-{{ gitlab_revision }}"
   apt:
-    name: "gitlab-ce{% if gitlab_version is defined %}={{ gitlab_version }}{% endif %}"
+    name: "gitlab-{{ gitlab_revision }}{% if gitlab_version is defined %}={{ gitlab_version }}{% endif %}"
     state: "{% if gitlab_version is defined %}present{% else %}latest{% endif %}"
     update_cache: yes
     cache_valid_time: 3600
