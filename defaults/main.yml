@@ -11,7 +11,7 @@ runners_token: Ru65oNWUzJQ17yh7YwzE
 gitlab_revision: ce
 gitlab_repository: "deb https://packages.gitlab.com/gitlab/gitlab-{{ gitlab_revision }}/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} main"
 gitlab_key_url: "https://packages.gitlab.com/gitlab/gitlab-ee/gpgkey"
-
+initial_license_file: ""
 
 prometheus:
   enable: true

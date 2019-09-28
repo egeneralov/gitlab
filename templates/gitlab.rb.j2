@@ -8,6 +8,8 @@ prometheus_monitoring['enable'] = {{ prometheus.exporters.gitlab_monitor | bool 
 postgres_exporter['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
 prometheus['listen_address'] = '{{ prometheus.listen_address | default('127.0.0.1:9090') }}'
 
+{% if gitlab_revision == "ee" %}{% if initial_license_file != "" %}gitlab_rails['initial_license_file'] = '{{ initial_license_file }}'{% endif %}{% endif %}
+
 gitlab_rails['letsencrypt'] = YAML.load <<-'EOS'
 {{ letsencrypt | to_nice_yaml(indent=2) }}
 EOS
@@ -78,10 +80,6 @@ nginx['{{ key }}']="{{ value }}"
 {% endfor %}
 {% endif %}
 
-
-
 grafana = YAML.load <<-'EOS'
-
 {{ grafana | to_nice_yaml(indent=2) }}
-
 EOS
