@@ -37,7 +37,7 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
      password: '{{ ldap.password }}'
      encryption: '{{ ldap.encryption }}'
      verify_certificates: {{ ldap.verify_certificates }}
-     ca_file: '{{ ldap.ca_file }}'
+     ca_file: '{{ ldap.ca_file|default("") }}'
      active_directory: {{ ldap.active_directory }}
      allow_username_or_email_login: {{ ldap.allow_username_or_email_login }}
      block_auto_created_users: {{ ldap.block_auto_created_users }}
