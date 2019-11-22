@@ -1,0 +1,192 @@
+  log_format extend_json
+  '{ '
+    '"SourceProgram":"nginx", '
+    '"time_local":"$time_local", '
+    '"remote_addr":"$remote_addr", '
+    '"remote_user":"$remote_user", '
+    '"host":"$host", '
+    '"request":"$request", '
+    '"status":$status, '
+    '"bytes_sent":$bytes_sent, '
+    '"http_referer":"$http_referer", '
+    '"request_time":"$request_time", '
+    '"upstream_addr":"$upstream_addr", '
+    '"upstream_response_time":"$upstream_response_time", '
+    '"gzip_ratio":"$gzip_ratio", '
+    '"http_user_agent":"$http_user_agent"'
+  ' }';
+
+# This file is managed by gitlab-ctl. Manual changes will be
+# erased! To change the contents below, edit /etc/gitlab/gitlab.rb
+# and run `sudo gitlab-ctl reconfigure`.
+
+## GitLab
+## Modified from https://gitlab.com/gitlab-org/gitlab-foss/blob/master/lib/support/nginx/gitlab-ssl & https://gitlab.com/gitlab-org/gitlab-foss/blob/master/lib/support/nginx/gitlab
+##
+## Lines starting with two hashes (##) are comments with information.
+## Lines starting with one hash (#) are configuration parameters that can be uncommented.
+##
+##################################
+##        CHUNKED TRANSFER      ##
+##################################
+##
+## It is a known issue that Git-over-HTTP requires chunked transfer encoding [0]
+## which is not supported by Nginx < 1.3.9 [1]. As a result, pushing a large object
+## with Git (i.e. a single large file) can lead to a 411 error. In theory you can get
+## around this by tweaking this configuration file and either:
+## - installing an old version of Nginx with the chunkin module [2] compiled in, or
+## - using a newer version of Nginx.
+##
+## At the time of writing we do not know if either of these theoretical solutions works.
+## As a workaround users can use Git over SSH to push large files.
+##
+## [0] https://git.kernel.org/cgit/git/git.git/tree/Documentation/technical/http-protocol.txt#n99
+## [1] https://github.com/agentzh/chunkin-nginx-module#status
+## [2] https://github.com/agentzh/chunkin-nginx-module
+##
+###################################
+##         configuration         ##
+###################################
+
+## Redirects all HTTP traffic to the HTTPS host
+server {
+  listen *:80;
+
+  server_name {{ domain }};
+  server_tokens off; ## Don't show the nginx version number, a security best practice
+
+  location /.well-known {
+    root /var/opt/gitlab/nginx/www/;
+  }
+
+  location / {
+    return 301 https://{{ domain }}:443$request_uri;
+  }
+
+  # health checks configuration
+  include /etc/nginx/conf.d/gitlab-health.conf;
+
+  access_log  /var/log/gitlab/nginx/gitlab_access.log gitlab_access;
+  error_log   /var/log/gitlab/nginx/gitlab_error.log;
+}
+
+server {
+  listen *:443 ssl http2;
+
+
+  server_name {{ domain }};
+  server_tokens off; ## Don't show the nginx version number, a security best practice
+
+  ## Increase this if you want to upload large attachments
+  ## Or if you want to accept large git objects over http
+  client_max_body_size 250m;
+
+  ## Strong SSL Security
+  ## https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html & https://cipherli.st/
+  ssl_certificate /etc/gitlab/ssl/{{ domain }}.crt;
+  ssl_certificate_key /etc/gitlab/ssl/{{ domain }}.key;
+  ssl_client_certificate /etc/gitlab/ssl/ca.crt;
+  ssl_verify_client optional;
+  ssl_verify_depth 2;
+
+#  if ($http_host = "{{ domain }}") {}
+#  set $test 0;
+  
+  if ($ssl_client_verify != SUCCESS) {
+    set $fail 1;
+  }
+
+  if ($remote_addr ~ "127.0.0.1|{{ ansible_all_ipv4_addresses | join('|') }}|{{ ansible_all_ipv6_addresses | join('|') }}") { set $fail 0; }
+  if ($http_user_agent ~ "gitlab-runner.*") { set $fail 0; }
+  if ($http_host = "{{ registry_host }}") { set $fail 0; }
+  if ($fail = 1) {return 403;}
+
+  # GitLab needs backwards compatible ciphers to retain compatibility with Java IDEs
+  ssl_ciphers 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4';
+  ssl_protocols  TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  ssl_session_cache  builtin:1000  shared:SSL:10m;
+  ssl_session_timeout  5m;
+
+
+  ## Real IP Module Config
+  ## http://nginx.org/en/docs/http/ngx_http_realip_module.html
+
+  ## HSTS Config
+  ## https://www.nginx.com/blog/http-strict-transport-security-hsts-and-nginx/
+  add_header Strict-Transport-Security "max-age=31536000";
+
+  add_header Referrer-Policy strict-origin-when-cross-origin;
+
+  ## Individual nginx logs for this GitLab vhost
+#  access_log  /var/log/gitlab/nginx/gitlab_access.log gitlab_access;
+  access_log  /var/log/gitlab/nginx/gitlab_access.log extend_json;
+  error_log   /var/log/gitlab/nginx/gitlab_error.log;
+
+  if ($http_host = "") {
+    set $http_host_with_default "{{ domain }}";
+  }
+
+  if ($http_host != "") {
+    set $http_host_with_default $http_host;
+  }
+
+  gzip on;
+  gzip_static on;
+  gzip_comp_level 2;
+  gzip_http_version 1.1;
+  gzip_vary on;
+  gzip_disable "msie6";
+  gzip_min_length 10240;
+  gzip_proxied no-cache no-store private expired auth;
+  gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/json application/xml application/rss+xml;
+
+  ## https://github.com/gitlabhq/gitlabhq/issues/694
+  ## Some requests take more than 30 seconds.
+  proxy_read_timeout      3600;
+  proxy_connect_timeout   300;
+  proxy_redirect          off;
+  proxy_http_version 1.1;
+
+  proxy_set_header Host $http_host_with_default;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection $connection_upgrade;
+  proxy_set_header X-Forwarded-Proto https;
+  proxy_set_header X-Forwarded-Ssl on;
+
+  location ~ (.git/git-receive-pack$|.git/info/refs?service=git-receive-pack$|.git/gitlab-lfs/objects|.git/info/lfs/objects/batch$) {
+    proxy_cache off;
+    proxy_pass http://gitlab-workhorse;
+    proxy_request_buffering off;
+  }
+
+  location /-/grafana/ {
+    proxy_pass http://localhost:3000/;
+  }
+
+
+  # health checks configuration
+  include /etc/nginx/conf.d/gitlab-health.conf;
+
+  location / {
+    proxy_cache off;
+    proxy_pass  http://gitlab-workhorse;
+  }
+
+  location /assets {
+    proxy_cache gitlab;
+    proxy_pass  http://gitlab-workhorse;
+  }
+
+  error_page 404 /404.html;
+  error_page 500 /500.html;
+  error_page 502 /502.html;
+  location ~ ^/(404|500|502)(-custom)?\.html$ {
+    root /opt/gitlab/embedded/service/gitlab-rails/public;
+    internal;
+  }
+
+  
+}

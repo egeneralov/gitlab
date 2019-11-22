@@ -2,8 +2,8 @@
 # defaults file for egeneralov.gitlab
 
 
-domain: gitlab.egeneralov.tk
-registry_host: registry.egeneralov.tk
+domain: gitlab.{{ ansible_default_ipv4.address }}.xip.io
+registry_host: registry.{{ ansible_default_ipv4.address }}.xip.io
 email: eduard@generalov.net
 root_password: egeneralov
 runners_token: Ru65oNWUzJQ17yh7YwzE
@@ -208,6 +208,15 @@ nginx:
 
 
 runners_clean: false
+manage_iptables: false
+
+
+custom_nginx:
+  ssl:
+    provider: selfsigned
+    base_subj: "/C=NL/ST={{ domain }}/L={{ domain }}/O={{ domain }}/OU={{ domain }}"
+    users:
+      - egeneralov
 
 
 __gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"

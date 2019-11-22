@@ -1,0 +1,69 @@
+## Redirects all HTTP traffic to the HTTPS host
+server {
+  listen *:80;
+
+  server_name  {{ registry_host }};
+  server_tokens off; ## Don't show the nginx version number, a security best practice
+
+  location /.well-known {
+    root /var/opt/gitlab/nginx/www/;
+  }
+
+  location / {
+    return 301 https://{{ registry_host }}$request_uri;
+  }
+
+  access_log  /var/log/gitlab/nginx/gitlab_registry_access.log gitlab_access;
+  error_log   /var/log/gitlab/nginx/gitlab_registry_error.log;
+}
+
+server {
+  listen *:443 ssl;
+  server_name  {{ registry_host }};
+  server_tokens off; ## Don't show the nginx version number, a security best practice
+
+
+  ssl_client_certificate /etc/gitlab/ssl/ca.crt;
+  ssl_verify_client optional;
+  set $ssl_client_verify SUCCESS;
+
+
+  client_max_body_size 0;
+  chunked_transfer_encoding on;
+
+  ## Strong SSL Security
+  ## https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html & https://cipherli.st/
+  ssl_certificate /etc/gitlab/ssl/{{ domain }}.crt;
+  ssl_certificate_key /etc/gitlab/ssl/{{ domain }}.key;
+
+  ssl_ciphers 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4';
+  ssl_protocols  TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  ssl_session_cache  builtin:1000  shared:SSL:10m;
+  ssl_session_timeout  5m;
+
+
+  ## Real IP Module Config
+  ## http://nginx.org/en/docs/http/ngx_http_realip_module.html
+
+  access_log  /var/log/gitlab/nginx/gitlab_registry_access.log gitlab_access;
+  error_log   /var/log/gitlab/nginx/gitlab_registry_error.log;
+
+  location / {
+
+    proxy_set_header Host $http_host;
+#    proxy_set_header X-Real-IP $remote_addr;
+#    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Ssl on;
+
+    proxy_read_timeout                  900;
+    proxy_cache off;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+
+    proxy_pass          http://localhost:5000;
+  }
+  
+}

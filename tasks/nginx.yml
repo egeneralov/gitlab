@@ -1,0 +1,157 @@
+---
+
+- name: "Import : repo.key"
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+  register: nginx_repo_key
+
+- name: "configure : repository"
+  apt_repository:
+    repo: "deb http://nginx.org/packages/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} nginx"
+    filename: nginx
+  register: nginx_repo
+
+- name: install nginx
+  apt:
+    name:
+      - nginx
+      - iptables
+      - python-openssl
+    update_cache: "{% if nginx_repo is changed or nginx_repo_key is changed %}yes{% else %}no{% endif %}"
+    state: latest
+
+- name: "remove : default.conf"
+  file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+  register: nginx_default_conf
+
+- name: "systemd : nginx"
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: "iptables : nginx input 80 443"
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    ctstate: NEW,ESTABLISHED
+    jump: ACCEPT
+    comment: nginx
+  with_items:
+    - 80
+    - 443
+  when: manage_iptables
+
+- name: "mkdir : /etc/gitlab/ssl/"
+  file:
+    path: /etc/gitlab/ssl/
+    state: directory
+    owner: gitlab-www
+    group: gitlab-www
+
+- name: "setup ssl server-side"
+  block:
+  - name: "generate : ssl : private key RSA 4096"
+    openssl_privatekey:
+      path: "/etc/gitlab/ssl/{{ item }}.key"
+    with_items:
+      - ca
+      - "{{ domain }}"
+      - "{{ registry_host }}"
+  
+  - name: "generate : ssl : ca"
+    shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
+    args:
+      creates: /etc/gitlab/ssl/ca.crt
+  
+  - name: "generate : ssl : csr"
+    openssl_csr:
+      path: "/etc/gitlab/ssl/{{ item }}.csr"
+      privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+      common_name: "{{ item }}"
+    with_items:
+      - ca
+      - "{{ domain }}"
+      - "{{ registry_host }}"
+  
+  - name: "generate : ssl : {{ domain }}"
+    openssl_certificate:
+      path: "/etc/gitlab/ssl/{{ domain }}.crt"
+      privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
+      csr_path: "/etc/gitlab/ssl/{{ domain }}.csr"
+      ownca_path: "/etc/gitlab/ssl/ca.crt"
+      ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+      provider: ownca
+  
+  - name: "generate : ssl : {{ registry_host }}"
+    openssl_certificate:
+      path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
+      privatekey_path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+      csr_path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
+      ownca_path: "/etc/gitlab/ssl/ca.crt"
+      ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+      provider: ownca
+  when: custom_nginx.ssl.provider == 'selfsigned'
+
+- name: nginx.conf
+  template:
+    src: "nginx.conf.j2"
+    dest: "/etc/nginx/nginx.conf"
+  register: nginx_conf
+
+- name: nginx conf.d
+  template:
+    src: "{{ item }}.conf.j2"
+    dest: "/etc/nginx/conf.d/{{ item }}.conf"
+  with_items:
+    - gitlab-http
+    - gitlab-registry
+    - nginx-status
+    - gitlab-health
+  register: nginx_confd
+
+- name: "systemd : nginx"
+  systemd:
+    name: nginx
+    state: "{% if nginx_conf.changed or nginx_confd.changed %}reloaded{% else %}started{% endif %}"
+
+- name: "setup ssl server-side"
+  block:
+  
+  - name: "generate : ssl : users : private key (if csr for user not founded)"
+    openssl_privatekey:
+      path: "/etc/gitlab/ssl/{{ item }}.key"
+    with_items: "{{ custom_nginx.ssl.users }}"
+  
+  - name: "copy : ssl : users : csr"
+    copy:
+      src: "csr_{{ item }}.csr"
+      dest: "/etc/gitlab/ssl/{{ item }}.csr"
+    failed_when: false # ignore if not founded
+    with_items: "{{ custom_nginx.ssl.users }}"
+  
+  - name: "generate : ssl : users : csr"
+    openssl_csr:
+      path: "/etc/gitlab/ssl/{{ item }}.csr"
+      privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+      common_name: "{{ item }}"
+    with_items: "{{ custom_nginx.ssl.users }}"  
+  
+  - name: "generate : ssl : users : crt"
+    openssl_certificate:
+      path: "/etc/gitlab/ssl/{{ item }}.crt"
+      privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+      csr_path: "/etc/gitlab/ssl/{{ item }}.csr"
+      ownca_path: "/etc/gitlab/ssl/ca.crt"
+      ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+      provider: ownca
+    with_items: "{{ custom_nginx.ssl.users }}"  
+  
+  - name: "generate : ssl : users : pfx"
+    shell: "openssl pkcs12 -export -out {{ item }}.pfx -inkey {{ item }}.key -in {{ item }}.crt -certfile ca.crt -passout pass:{{ item|reverse }}"
+    args:
+      chdir: /etc/gitlab/ssl/
+    with_items: "{{ custom_nginx.ssl.users }}"  

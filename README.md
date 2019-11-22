@@ -133,6 +133,52 @@ Example playbook
       roles:
         - egeneralov.gitlab
 
+
+Example ssl client auth setup
+-----------------------------
+
+Run the following playbook
+
+    - hosts: gitlab
+      vars:
+        domain: gitlab.{{ ansible_default_ipv4.address }}.xip.io
+        registry_host: registry.{{ ansible_default_ipv4.address }}.xip.io
+        email: eduard@generalov.net
+        root_password: Ru65oNWUzJQ17yh7YwzE
+        runners_token: Ru65oNWUzJQ17yh7YwzE
+        
+        nginx:
+          enable: false
+        
+        custom_nginx:
+          ssl:
+            provider: selfsigned
+            base_subj: "/C=NL/ST={{ domain }}/L={{ domain }}/O={{ domain }}/OU={{ domain }}"
+            # specify list of users for auto-certificate setup. Insecure way.
+            users:
+              - egeneralov
+      roles:
+        - egeneralov.gitlab
+
+And you can generate client certificates (manualy) like that (Insecure way):
+
+    cd /etc/gitlab/ssl/
+    USER=egeneralov
+    openssl genrsa -out $USER.key 2048
+    openssl req -new -key $USER.key -out $USER.csr -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=$USER"
+    openssl x509 -req -in $USER.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out $USER.crt -days 365
+    openssl pkcs12 -export -out $USER.pfx -inkey $USER.key -in $USER.crt -certfile ca.crt
+
+Secure way:
+
+- customer must generate .key via `openssl genrsa -out $USER.key 2048`
+- customer must generate .csr via `openssl req -new -key $USER.key -out $USER.csr -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=$USER"`
+- obtain a .csr from your customer
+- you copy .csr to `/etc/gitlab/ssl` on gitlab server
+- sign .crt via `openssl x509 -req -in $USER.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out $USER.crt -days 365`
+- send .crt and ca.crt to your customer
+- your customer must generate his .pfx file via `openssl pkcs12 -export -out $USER.pfx -inkey $USER.key -in $USER.crt -certfile ca.crt`
+
 License
 -------
 
