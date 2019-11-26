@@ -76,7 +76,7 @@ EOS
 
 {% if nginx is defined %}
 {% for key, value in nginx.items() %}
-nginx['{{ key }}']="{{ value }}"
+nginx['{{ key }}']="{% if value == "False" or value == "True" %}{{ value|lower }}{% else %}{{ value }}{% fi %}"
 {% endfor %}
 {% endif %}
 
