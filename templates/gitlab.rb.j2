@@ -1,4 +1,4 @@
-external_url 'http{% if letsencrypt.enable == true %}s{% endif %}://{{ domain }}'
+external_url 'http{% if letsencrypt.enable == true or not nginx.enabled %}s{% endif %}://{{ domain }}'
 
 
 gitlab_rails['usage_ping_enabled'] = false
