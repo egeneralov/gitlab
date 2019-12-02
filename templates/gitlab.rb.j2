@@ -1,28 +1,62 @@
-external_url 'http{% if letsencrypt.enable == true or not nginx.enable %}s{% endif %}://{{ domain }}'
-
+{% if nginx.enable is defined %}
+{% if nginx.enable %}
+external_url 'http{% if letsencrypt is defined and letsencrypt.enable == true or not nginx.enable %}s{% endif %}://{{ domain }}'
+{% elif custom_nginx.enable is defined and custom_nginx.enable %}
+external_url 'https://{{ domain }}'
+{% endif %}
+{% endif %}{# end of "if nginx.enable is defined" #}
 
 gitlab_rails['usage_ping_enabled'] = false
+
+{% if prometheus is defined %}
 prometheus['enable'] = {{ prometheus.enable | bool | lower }}
+
+{% if prometheus.exporters.gitlab_monitor is defined %}
 gitlab_monitor['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
 prometheus_monitoring['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+{% endif %}
+
+{% if prometheus.exporters.gitlab_monitor is defined %}
 postgres_exporter['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+{% endif %}
+{% if prometheus.listen_address is defined %}
 prometheus['listen_address'] = '{{ prometheus.listen_address | default('127.0.0.1:9090') }}'
+{% endif %}
+{% endif %}{# end of "if prometheus is defined" #}
 
+{% if gitlab_revision is defined %}
 {% if gitlab_revision == "ee" %}{% if initial_license_file != "" %}gitlab_rails['initial_license_file'] = '{{ initial_license_file }}'{% endif %}{% endif %}
+{% endif %}
 
+{% if letsencrypt is defined %}
 gitlab_rails['letsencrypt'] = YAML.load <<-'EOS'
 {{ letsencrypt | to_nice_yaml(indent=2) }}
 EOS
+{% endif %}{# end of "if letsencrypt is defined" #}
 
+{% if registry_host is defined %}
 gitlab_rails['registry_enabled'] = true
 gitlab_rails['registry_host'] = '{{ registry_host }}'
 registry['enable'] = true
 registry['username'] = 'registry'
 registry['dir'] = '/var/opt/gitlab/registry'
-registry_external_url 'http{% if letsencrypt.enable == true %}s{% endif %}://{{ registry_host }}'
+{% if letsencrypt is defined and letsencrypt.enable == true %}
+registry_external_url 'https://{{ registry_host }}'
+{% elif nginx.enable is defined and not nginx.enable and custom_nginx.enable is defined and custom_nginx.enable %}
+registry_external_url 'https://{{ registry_host }}'
+{% endif %}
+{% else %}
+gitlab_rails['registry_enabled'] = false
+registry['enable'] = false
+{% endif %}{# end of "if registry_host is defined" #}
 
+{% if root_password is defined %}
 gitlab_rails['initial_root_password'] = '{{ root_password }}'
+{% endif %}
+
+{% if runners_token is defined %}
 gitlab_rails['initial_shared_runners_registration_token'] = '{{ runners_token }}'
+{% endif %}
 
 {% if ldap is defined %}
 {% if ldap.enabled == true %}
@@ -37,7 +71,7 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
      password: '{{ ldap.password }}'
      encryption: '{{ ldap.encryption }}'
      verify_certificates: {{ ldap.verify_certificates }}
-     ca_file: '{{ ldap.ca_file|default("") }}'
+{% if ldap.ca_file is defined %}     ca_file: '{{ ldap.ca_file }}'{% endif %}
      active_directory: {{ ldap.active_directory }}
      allow_username_or_email_login: {{ ldap.allow_username_or_email_login }}
      block_auto_created_users: {{ ldap.block_auto_created_users }}
@@ -51,7 +85,7 @@ gitlab_rails['ldap_servers'] = YAML.load <<-'EOS'
        last_name:  'sn'
 EOS
 {% endif %}
-{% endif %}
+{% endif %}{# end of "if ldap is defined" #}
 
 {% if omniauth is defined %}
 {% if omniauth.enabled == true %}
@@ -61,7 +95,7 @@ gitlab_rails['omniauth_providers'] = YAML.load <<-'EOS'
 {{ omniauth.providers | to_nice_yaml(indent=2) }}
 EOS
 {% endif %}
-{% endif %}
+{% endif %}{# end of "if omniauth is defined" #}
 
 {% if backup is defined %}
 {% if backup.enabled == true %}
@@ -72,16 +106,24 @@ gitlab_rails['backup_upload_connection'] = YAML.load <<-'EOS'
 EOS
 {% endif %}
 {% endif %}
-{% endif %}
+{% endif %}{# end of "if backup is defined" #}
 
 {% if nginx is defined %}
 {% for key, value in nginx.items() %}
-nginx['{{ key }}']="{% if value == "False" or value == "True" %}{{ value|lower }}{% else %}{{ value }}{% fi %}"
+nginx['{{ key }}'] = {% if value == False or value == True %}{{ value|lower }}{% else %}"{{ value }}"{% endif %}
+
 {% endfor %}
 {% endif %}
 
+
+{% if grafana is defined %}
 grafana = YAML.load <<-'EOS'
 {{ grafana | to_nice_yaml(indent=2) }}
 EOS
+{% endif %}
 
 alertmanager['enable'] = false
+
+{% if raw_config is defined %}
+{{ raw_config }}
+{% endif %}

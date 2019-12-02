@@ -61,7 +61,6 @@
   retries: 2
   delay: 2
 
-
 - include_tasks: nginx.yml
-  when: not nginx.enable
+  when: not nginx.enable and custom_nginx.enable
 
