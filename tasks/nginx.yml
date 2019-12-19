@@ -154,4 +154,5 @@
     shell: "openssl pkcs12 -export -out {{ item }}.pfx -inkey {{ item }}.key -in {{ item }}.crt -certfile ca.crt -passout pass:{{ item|reverse }}"
     args:
       chdir: /etc/gitlab/ssl/
+      creates: "/etc/gitlab/ssl/{{ item }}.pfx"
     with_items: "{{ custom_nginx.ssl.users }}"  
