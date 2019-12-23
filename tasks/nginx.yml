@@ -52,57 +52,57 @@
     owner: gitlab-www
     group: gitlab-www
 
-- name: "setup ssl server-side"
-  block:
-  - name: "generate : ssl : private key RSA 4096"
-    openssl_privatekey:
-      path: "/etc/gitlab/ssl/{{ item }}.key"
-    with_items:
-      - ca
-      - "{{ domain }}"
-      - "{{ registry_host }}"
-    args:
-      creates: "/etc/gitlab/ssl/{{ item }}.key"
-  
-  - name: "generate : ssl : ca"
-    shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
-    args:
-      creates: /etc/gitlab/ssl/ca.crt
-  
-  - name: "generate : ssl : csr"
-    openssl_csr:
-      path: "/etc/gitlab/ssl/{{ item }}.csr"
-      privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
-      common_name: "{{ item }}"
-    with_items:
-      - ca
-      - "{{ domain }}"
-      - "{{ registry_host }}"
-    args:
-      creates: "/etc/gitlab/ssl/{{ item }}.csr"
-  
-  - name: "generate : ssl : {{ domain }}"
-    openssl_certificate:
-      path: "/etc/gitlab/ssl/{{ domain }}.crt"
-      privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
-      csr_path: "/etc/gitlab/ssl/{{ domain }}.csr"
-      ownca_path: "/etc/gitlab/ssl/ca.crt"
-      ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
-      provider: ownca
-    args:
-      creates: "/etc/gitlab/ssl/{{ domain }}.crt"
-  
-  - name: "generate : ssl : {{ registry_host }}"
-    openssl_certificate:
-      path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
-      privatekey_path: "/etc/gitlab/ssl/{{ registry_host }}.key"
-      csr_path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
-      ownca_path: "/etc/gitlab/ssl/ca.crt"
-      ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
-      provider: ownca
-    args:
-      creates: "/etc/gitlab/ssl/{{ registry_host }}.crt"
-  when: custom_nginx.ssl.provider == 'selfsigned'
+# - name: "setup ssl server-side"
+#   block:
+- name: "generate : ssl : private key RSA 4096"
+  openssl_privatekey:
+    path: "/etc/gitlab/ssl/{{ item }}.key"
+  with_items:
+    - ca
+    - "{{ domain }}"
+    - "{{ registry_host }}"
+  args:
+    creates: "/etc/gitlab/ssl/{{ item }}.key"
+
+- name: "generate : ssl : ca"
+  shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
+  args:
+    creates: /etc/gitlab/ssl/ca.crt
+
+- name: "generate : ssl : csr"
+  openssl_csr:
+    path: "/etc/gitlab/ssl/{{ item }}.csr"
+    privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+    common_name: "{{ item }}"
+  with_items:
+    - ca
+    - "{{ domain }}"
+    - "{{ registry_host }}"
+  args:
+    creates: "/etc/gitlab/ssl/{{ item }}.csr"
+
+- name: "generate : ssl : {{ domain }}"
+  openssl_certificate:
+    path: "/etc/gitlab/ssl/{{ domain }}.crt"
+    privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
+    csr_path: "/etc/gitlab/ssl/{{ domain }}.csr"
+    ownca_path: "/etc/gitlab/ssl/ca.crt"
+    ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+    provider: ownca
+  args:
+    creates: "/etc/gitlab/ssl/{{ domain }}.crt"
+
+- name: "generate : ssl : {{ registry_host }}"
+  openssl_certificate:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
+    privatekey_path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+    csr_path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
+    ownca_path: "/etc/gitlab/ssl/ca.crt"
+    ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+    provider: ownca
+  args:
+    creates: "/etc/gitlab/ssl/{{ registry_host }}.crt"
+#   when: custom_nginx.ssl.provider == 'selfsigned'
 
 - name: nginx.conf
   template:
