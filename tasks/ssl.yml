@@ -1,0 +1,135 @@
+
+- name: "mkdir : /etc/gitlab/ssl/"
+  file:
+    path: /etc/gitlab/ssl/
+    state: directory
+    owner: gitlab-www
+    group: gitlab-www
+
+- stat:
+    path: "/etc/gitlab/ssl/ca.key"
+  register: ca_key
+
+- stat:
+    path: "/etc/gitlab/ssl/{{ domain }}.key"
+  register: domain_key
+
+- stat:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+  register: registry_host_key
+
+- name: "generate : ssl : private key RSA 4096 ca"
+  openssl_privatekey:
+    path: "/etc/gitlab/ssl/ca.key"
+  when: not ca_key.stat.exists
+
+- name: "generate : ssl : private key RSA 4096 {{ domain }}"
+  openssl_privatekey:
+    path: "/etc/gitlab/ssl/{{ domain }}.key"
+  when: not domain_key.stat.exists
+
+- name: "generate : ssl : private key RSA 4096 {{ registry_host }}"
+  openssl_privatekey:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+  when: not registry_host_key.stat.exists
+
+
+- name: "generate : ssl : ca"
+  shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
+  args:
+    creates: /etc/gitlab/ssl/ca.crt
+
+- stat:
+    path: "/etc/gitlab/ssl/ca.csr"
+  register: ca_csr
+
+- name: "generate : ssl : csr ca"
+  openssl_csr:
+    path: "/etc/gitlab/ssl/{{ ca }}.csr"
+    privatekey_path: "/etc/gitlab/ssl/{{ ca }}.key"
+    common_name: "ca"
+  when: not ca_csr.stat.exists
+- stat:
+    path: "/etc/gitlab/ssl/ca.csr"
+  register: domain_csr
+
+- name: "generate : ssl : csr domain"
+  openssl_csr:
+    path: "/etc/gitlab/ssl/{{ domain }}.csr"
+    privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
+    common_name: "domain"
+  when: not domain_csr.stat.exists
+- stat:
+    path: "/etc/gitlab/ssl/ca.csr"
+  register: registry_host_csr
+
+- name: "generate : ssl : csr registry_host"
+  openssl_csr:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
+    privatekey_path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+    common_name: "registry_host"
+  when: not registry_host_csr.stat.exists
+
+- stat:
+    path: "/etc/gitlab/ssl/{{ domain }}.crt"
+  register: domain_crt
+- stat:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
+  register: registry_host_crt
+
+- name: "generate : ssl : {{ domain }}"
+  openssl_certificate:
+    path: "/etc/gitlab/ssl/{{ domain }}.crt"
+    privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
+    csr_path: "/etc/gitlab/ssl/{{ domain }}.csr"
+    ownca_path: "/etc/gitlab/ssl/ca.crt"
+    ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+    provider: ownca
+  when: not domain_crt.stat.exists
+
+- name: "generate : ssl : {{ registry_host }}"
+  openssl_certificate:
+    path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
+    privatekey_path: "/etc/gitlab/ssl/{{ registry_host }}.key"
+    csr_path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
+    ownca_path: "/etc/gitlab/ssl/ca.crt"
+    ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+    provider: ownca
+  when: not registry_host_crt.stat.exists
+
+
+- name: "generate : ssl : users : private key (if csr for user not founded)"
+  openssl_privatekey:
+    path: "/etc/gitlab/ssl/{{ item }}.key"
+  with_items: "{{ custom_nginx.ssl.users }}"
+
+- name: "copy : ssl : users : csr"
+  copy:
+    src: "csr_{{ item }}.csr"
+    dest: "/etc/gitlab/ssl/{{ item }}.csr"
+  failed_when: false # ignore if not founded
+  with_items: "{{ custom_nginx.ssl.users }}"
+
+- name: "generate : ssl : users : csr"
+  openssl_csr:
+    path: "/etc/gitlab/ssl/{{ item }}.csr"
+    privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+    common_name: "{{ item }}"
+  with_items: "{{ custom_nginx.ssl.users }}"  
+
+- name: "generate : ssl : users : crt"
+  openssl_certificate:
+    path: "/etc/gitlab/ssl/{{ item }}.crt"
+    privatekey_path: "/etc/gitlab/ssl/{{ item }}.key"
+    csr_path: "/etc/gitlab/ssl/{{ item }}.csr"
+    ownca_path: "/etc/gitlab/ssl/ca.crt"
+    ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
+    provider: ownca
+  with_items: "{{ custom_nginx.ssl.users }}"  
+
+- name: "generate : ssl : users : pfx"
+  shell: "openssl pkcs12 -export -out {{ item }}.pfx -inkey {{ item }}.key -in {{ item }}.crt -certfile ca.crt -passout pass:{{ item|reverse }}"
+  args:
+    chdir: /etc/gitlab/ssl/
+    creates: "/etc/gitlab/ssl/{{ item }}.pfx"
+  with_items: "{{ custom_nginx.ssl.users }}"  
