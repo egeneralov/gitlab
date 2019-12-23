@@ -61,6 +61,8 @@
       - ca
       - "{{ domain }}"
       - "{{ registry_host }}"
+    args:
+      creates: "/etc/gitlab/ssl/{{ item }}.key"
   
   - name: "generate : ssl : ca"
     shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
@@ -76,6 +78,8 @@
       - ca
       - "{{ domain }}"
       - "{{ registry_host }}"
+    args:
+      creates: "/etc/gitlab/ssl/{{ item }}.csr"
   
   - name: "generate : ssl : {{ domain }}"
     openssl_certificate:
@@ -85,6 +89,8 @@
       ownca_path: "/etc/gitlab/ssl/ca.crt"
       ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
       provider: ownca
+    args:
+      creates: "/etc/gitlab/ssl/{{ domain }}.crt"
   
   - name: "generate : ssl : {{ registry_host }}"
     openssl_certificate:
@@ -94,6 +100,8 @@
       ownca_path: "/etc/gitlab/ssl/ca.crt"
       ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
       provider: ownca
+    args:
+      creates: "/etc/gitlab/ssl/{{ registry_host }}.crt"
   when: custom_nginx.ssl.provider == 'selfsigned'
 
 - name: nginx.conf
