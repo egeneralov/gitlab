@@ -67,6 +67,6 @@
 - name: "systemd : nginx"
   systemd:
     name: nginx
-    enable: yes
+    enabled: yes
     state: "{% if nginx_conf.changed or nginx_confd.changed %}reloaded{% else %}started{% endif %}"
 
