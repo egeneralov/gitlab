@@ -45,8 +45,8 @@
 
 - name: "generate : ssl : csr ca"
   openssl_csr:
-    path: "/etc/gitlab/ssl/{{ ca }}.csr"
-    privatekey_path: "/etc/gitlab/ssl/{{ ca }}.key"
+    path: "/etc/gitlab/ssl/ca.csr"
+    privatekey_path: "/etc/gitlab/ssl/ca.key"
     common_name: "ca"
   when: not ca_csr.stat.exists
 - stat:
