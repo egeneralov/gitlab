@@ -41,16 +41,6 @@
 
 - stat:
     path: "/etc/gitlab/ssl/ca.csr"
-  register: ca_csr
-
-- name: "generate : ssl : csr ca"
-  openssl_csr:
-    path: "/etc/gitlab/ssl/ca.csr"
-    privatekey_path: "/etc/gitlab/ssl/ca.key"
-    common_name: "ca"
-  when: not ca_csr.stat.exists
-- stat:
-    path: "/etc/gitlab/ssl/ca.csr"
   register: domain_csr
 
 - name: "generate : ssl : csr domain"
@@ -59,8 +49,9 @@
     privatekey_path: "/etc/gitlab/ssl/{{ domain }}.key"
     common_name: "domain"
   when: not domain_csr.stat.exists
+
 - stat:
-    path: "/etc/gitlab/ssl/ca.csr"
+    path: "/etc/gitlab/ssl/{{ registry_host }}.csr"
   register: registry_host_csr
 
 - name: "generate : ssl : csr registry_host"
@@ -73,6 +64,7 @@
 - stat:
     path: "/etc/gitlab/ssl/{{ domain }}.crt"
   register: domain_crt
+
 - stat:
     path: "/etc/gitlab/ssl/{{ registry_host }}.crt"
   register: registry_host_crt
