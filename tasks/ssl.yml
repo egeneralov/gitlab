@@ -35,7 +35,7 @@
 
 
 - name: "generate : ssl : ca"
-  shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 1024 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
+  shell: "openssl req -x509 -new -nodes -key /etc/gitlab/ssl/ca.key -sha256 -days 3650 -out /etc/gitlab/ssl/ca.crt -subj '{{ custom_nginx.ssl.base_subj }}/CN={{ domain }}'"
   args:
     creates: /etc/gitlab/ssl/ca.crt
 
@@ -117,6 +117,7 @@
     ownca_path: "/etc/gitlab/ssl/ca.crt"
     ownca_privatekey_path: "/etc/gitlab/ssl/ca.key"
     provider: ownca
+    selfsigned_not_after: "+365d"
   with_items: "{{ custom_nginx.ssl.users }}"  
 
 - name: "generate : ssl : users : pfx"
