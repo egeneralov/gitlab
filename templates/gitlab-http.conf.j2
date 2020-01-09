@@ -1,20 +1,36 @@
-  log_format extend_json
-  '{ '
-    '"SourceProgram":"nginx", '
-    '"time_local":"$time_local", '
-    '"remote_addr":"$remote_addr", '
-    '"remote_user":"$remote_user", '
-    '"host":"$host", '
-    '"request":"$request", '
-    '"status":$status, '
-    '"bytes_sent":$bytes_sent, '
-    '"http_referer":"$http_referer", '
-    '"request_time":"$request_time", '
-    '"upstream_addr":"$upstream_addr", '
-    '"upstream_response_time":"$upstream_response_time", '
-    '"gzip_ratio":"$gzip_ratio", '
-    '"http_user_agent":"$http_user_agent"'
-  ' }';
+geo $rfc6890 {
+  default 1;
+  10.0.0.0/8 0;
+  172.16.0.0/12 0;
+  192.168.0.0/16 0;
+  100.64.0.0/10 0;
+  127.0.0.0/8 0;
+}
+
+geo $allowed_ips {
+  default 1;
+{% for ip in ansible_all_ipv4_addresses %}
+  {{ ip }}/32 0;
+{% endfor %}
+}
+
+log_format extend_json
+'{ '
+  '"SourceProgram":"nginx", '
+  '"time_local":"$time_local", '
+  '"remote_addr":"$remote_addr", '
+  '"remote_user":"$remote_user", '
+  '"host":"$host", '
+  '"request":"$request", '
+  '"status":$status, '
+  '"bytes_sent":$bytes_sent, '
+  '"http_referer":"$http_referer", '
+  '"request_time":"$request_time", '
+  '"upstream_addr":"$upstream_addr", '
+  '"upstream_response_time":"$upstream_response_time", '
+  '"gzip_ratio":"$gzip_ratio", '
+  '"http_user_agent":"$http_user_agent"'
+' }';
 
 # This file is managed by gitlab-ctl. Manual changes will be
 # erased! To change the contents below, edit /etc/gitlab/gitlab.rb
@@ -89,9 +105,6 @@ server {
   ssl_verify_client optional;
   ssl_verify_depth 2;
 
-#  if ($http_host = "{{ domain }}") {}
-#  set $test 0;
-  
   if ($ssl_client_verify != SUCCESS) {
     set $fail 1;
   }
@@ -100,14 +113,17 @@ server {
   if ($remote_addr ~ "{{ ansible_all_ipv4_addresses | join('|') }}|127.0.0.1") { set $fail 0; }
   if ($http_user_agent ~ "docker|git") { set $fail 0; }
   if ($http_host = "{{ registry_host }}") { set $fail 0; }
+  if ($rfc6890) { set $fail 0; }
+  if ($allowed_ips) { set $fail 0; }
+  
   if ($fail = 1) { return 403; }
-
+  
   # GitLab needs backwards compatible ciphers to retain compatibility with Java IDEs
   ssl_ciphers 'ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4';
-  ssl_protocols  TLSv1.2 TLSv1.3;
+  ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers on;
-  ssl_session_cache  builtin:1000  shared:SSL:10m;
-  ssl_session_timeout  5m;
+  ssl_session_cache builtin:1000 shared:SSL:10m;
+  ssl_session_timeout 5m;
 
 
   ## Real IP Module Config
