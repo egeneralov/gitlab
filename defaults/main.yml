@@ -230,6 +230,13 @@ custom_nginx:
     base_subj: "/C=NL/ST={{ domain }}/L={{ domain }}/O={{ domain }}/OU={{ domain }}"
     users:
       - egeneralov
+#   raw: |
+#     server {
+#       server_name localhost;
+#       listen 80;
+#       root /tmp
+#     }
+#     include /opt/custom/file;
 
 
 __gitlab_backup_cmd__: "export {% if backup.skip|length > 0 %}SKIP={{ backup.skip | join(',')}} {% endif %}CRON=1 && gitlab-rake gitlab:backup:create{% if backup.autoremove %} && rm /var/opt/gitlab/backups/*.tar{% endif %}"

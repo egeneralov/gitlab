@@ -72,4 +72,9 @@ http {
   include /etc/nginx/conf.d/gitlab-http.conf;
   include /etc/nginx/conf.d/gitlab-registry.conf;
   include /etc/nginx/conf.d/nginx-status.conf;
+
+{% if custom_nginx.raw is defined %}
+{{ custom_nginx.raw }}
+{% endif %}
+
 }
