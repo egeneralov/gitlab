@@ -225,6 +225,8 @@ raw_config: ""
 
 custom_nginx:
   enable: false
+  conf:
+    client_max_body_size: 250m
   ssl:
     provider: selfsigned
     base_subj: "/C=NL/ST={{ domain }}/L={{ domain }}/O={{ domain }}/OU={{ domain }}"

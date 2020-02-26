@@ -95,7 +95,7 @@ server {
 
   ## Increase this if you want to upload large attachments
   ## Or if you want to accept large git objects over http
-  client_max_body_size 250m;
+  client_max_body_size {{ custom_nginx.conf.client_max_body_size | default('250m') }};
 
   ## Strong SSL Security
   ## https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html & https://cipherli.st/
