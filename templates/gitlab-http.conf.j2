@@ -117,6 +117,7 @@ server {
   if ($allowed_ips) { set $fail 0; }
   if ($request_uri ~ "readiness|liveness") { set $fail 0; }
   if ($request_uri ~ "/api/v4/jobs/(.*)/artifacts") { set $fail 0; }
+  if ($request_uri ~ "/api/v4/projects/(.*)/repository/tags") { set $fail 0; }
   
   if ($fail = 1) { return 403; }
   
