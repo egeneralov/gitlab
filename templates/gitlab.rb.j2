@@ -12,7 +12,7 @@ gitlab_rails['usage_ping_enabled'] = false
 prometheus['enable'] = {{ prometheus.enable | bool | lower }}
 
 {% if prometheus.exporters.gitlab_monitor is defined %}
-gitlab_monitor['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
+gitlab_exporter['enable'] = {{ prometheus.exporters.gitlab_exporter | bool | lower }}
 prometheus_monitoring['enable'] = {{ prometheus.exporters.gitlab_monitor | bool | lower }}
 {% endif %}
 

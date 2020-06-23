@@ -17,7 +17,7 @@ prometheus:
   enable: true
   listen_address: 127.0.0.1:9090
   exporters:
-    gitlab_monitor: true
+    gitlab_exporter: true
     prometheus_monitoring: true
     postgres_exporter: true
 
