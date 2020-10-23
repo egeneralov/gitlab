@@ -66,7 +66,8 @@ http {
   }
 
   upstream gitlab-workhorse {
-    server unix:/var/opt/gitlab/gitlab-workhorse/socket;
+    # server unix:/var/opt/gitlab/gitlab-workhorse/socket;
+    server unix:/var/opt/gitlab/gitlab-workhorse/sockets/socket;
   }
 
   include /etc/nginx/conf.d/gitlab-http.conf;
