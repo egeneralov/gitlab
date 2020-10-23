@@ -29,7 +29,8 @@ log_format extend_json
   '"upstream_addr":"$upstream_addr", '
   '"upstream_response_time":"$upstream_response_time", '
   '"gzip_ratio":"$gzip_ratio", '
-  '"http_user_agent":"$http_user_agent"'
+  '"http_user_agent":"$http_user_agent",'
+  '"ssl_client_s_dn":"$ssl_client_s_dn"'
 ' }';
 
 # This file is managed by gitlab-ctl. Manual changes will be
