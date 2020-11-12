@@ -46,6 +46,7 @@
   when: manage_iptables
 
 - import_tasks: ssl.yml
+  when: custom_nginx.ssl.provider == "selfsigned"
 
 - name: nginx.conf
   template:
