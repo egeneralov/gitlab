@@ -12,6 +12,9 @@ geo $allowed_ips {
 {% for ip in ansible_all_ipv4_addresses %}
   {{ ip }}/32 1;
 {% endfor %}
+{% for subnet in custom_nginx.whitelist %}
+  {{ subnet }} 1;
+{% endfor %}
 }
 
 log_format extend_json

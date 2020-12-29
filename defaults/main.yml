@@ -227,6 +227,8 @@ custom_nginx:
   enable: false
   conf:
     client_max_body_size: 250m
+  whitelist: []
+  # - 192.168.0.0/24
   ssl:
     provider: selfsigned
     base_subj: "/C=NL/ST={{ domain }}/L={{ domain }}/O={{ domain }}/OU={{ domain }}"
