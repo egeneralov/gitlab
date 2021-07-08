@@ -117,7 +117,7 @@ server {
   if ($remote_addr ~ "{{ ansible_all_ipv4_addresses | join('|') }}|127.0.0.1") { set $fail 0; }
   if ($rfc6890) { set $fail 0; }
   if ($allowed_ips) { set $fail 0; }
-  {{- custom_nginx.raw.gitlab_http | nindent 2 }}
+  {{- custom_nginx.raw.gitlab_http | indent(2, True) }}
   if ($fail = 1) { return 403; }
   
   # GitLab needs backwards compatible ciphers to retain compatibility with Java IDEs

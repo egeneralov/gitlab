@@ -74,6 +74,6 @@ http {
   include /etc/nginx/conf.d/gitlab-registry.conf;
   include /etc/nginx/conf.d/nginx-status.conf;
 
-  {{- custom_nginx.raw.nginx_conf | nindent 2 }}
+  {{- custom_nginx.raw.nginx_conf | indent(2, True) }}
 
 }
