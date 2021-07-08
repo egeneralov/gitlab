@@ -115,14 +115,9 @@ server {
 
 {#  if ($remote_addr ~ "{{ ansible_all_ipv4_addresses | join('|') }}|{{ ansible_all_ipv6_addresses | join('|') }}127.0.0.1") { set $fail 0; } #}
   if ($remote_addr ~ "{{ ansible_all_ipv4_addresses | join('|') }}|127.0.0.1") { set $fail 0; }
-  if ($http_user_agent ~ "docker|git") { set $fail 0; }
-  if ($http_host = "{{ registry_host }}") { set $fail 0; }
   if ($rfc6890) { set $fail 0; }
   if ($allowed_ips) { set $fail 0; }
-  if ($request_uri ~ "readiness|liveness") { set $fail 0; }
-  if ($request_uri ~ "/api/v4/jobs/(.*)/artifacts") { set $fail 0; }
-  if ($request_uri ~ "/api/v4/projects/(.*)/repository/tags") { set $fail 0; }
-  
+  {{- custom_nginx.raw.gitlab_http | nindent 2 }}
   if ($fail = 1) { return 403; }
   
   # GitLab needs backwards compatible ciphers to retain compatibility with Java IDEs
@@ -143,7 +138,6 @@ server {
   add_header Referrer-Policy strict-origin-when-cross-origin;
 
   ## Individual nginx logs for this GitLab vhost
-#  access_log  /var/log/gitlab/nginx/gitlab_access.log gitlab_access;
   access_log  /var/log/gitlab/nginx/gitlab_access.log extend_json;
   error_log   /var/log/gitlab/nginx/gitlab_error.log;
 
