@@ -53,6 +53,8 @@
     dest: /etc/gitlab/gitlab.rb
     backup: yes
   register: tpl
+  tags:
+    - configure
 
 - name: "gitlab-ctl reconfigure"
   shell: gitlab-ctl reconfigure
@@ -61,6 +63,8 @@
   until: task_result is success
   retries: 2
   delay: 2
+  tags:
+    - configure
 
 - include_tasks: nginx.yml
   when: not nginx.enable and custom_nginx.enable
